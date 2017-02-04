@@ -26,6 +26,9 @@ class FaceViewController: UIViewController {
             let sadderSwipeGestureRecognizer = UISwipeGestureRecognizer(target: self, action: #selector(FaceViewController.decreaseHappiness))
             sadderSwipeGestureRecognizer.direction = .down
             faceView.addGestureRecognizer(sadderSwipeGestureRecognizer)
+            faceView.addGestureRecognizer(UIRotationGestureRecognizer(
+                target: self, action: #selector(FaceViewController.changeBrows(recognizer:))
+            ))
             updateUI()
         }
     }
@@ -47,17 +50,34 @@ class FaceViewController: UIViewController {
         expression.mouth = expression.mouth.sadderMouth()    }
     
     private var mouthCurvatures = [FacialExpression.Mouth.Frown:-1.0,.Grin:0.5,.Smile:1.0,.Smirk:-0.5,.Neutral:0.0]
+    
     private var eyeBrowTilts = [FacialExpression.EyeBrows.Relaxed:0.5,.Furrowed:-0.5,.Normal:0.0]
     
+    func changeBrows(recognizer: UIRotationGestureRecognizer) {
+        switch recognizer.state {
+        case .changed,.ended:
+            if recognizer.rotation > CGFloat(M_PI/4) {
+                expression.eyeBrows = expression.eyeBrows.moreRelaxedBrow()
+                recognizer.rotation = 0.0
+            } else if recognizer.rotation < -CGFloat(M_PI/4) {
+                expression.eyeBrows = expression.eyeBrows.moreFurrowedBrow()
+                recognizer.rotation = 0.0
+            }
+        default:
+            break
+        }
+    }
     
     private func updateUI(){
-        switch expression.eyes {
-        case .Open: faceView.eyesOpen = true
-        case .Closed: faceView.eyesOpen = false
-        case .Squinting: faceView.eyesOpen = false
+        if faceView != nil {
+            switch expression.eyes {
+            case .Open: faceView.eyesOpen = true
+            case .Closed: faceView.eyesOpen = false
+            case .Squinting: faceView.eyesOpen = false
+            }
+            faceView.mouthCurvature = mouthCurvatures[expression.mouth] ?? 0.0
+            faceView.eyeBrowTilt = eyeBrowTilts[expression.eyeBrows] ?? 0.0
         }
-        faceView.mouthCurvature = mouthCurvatures[expression.mouth] ?? 0.0
-        faceView.eyeBrowTilt = eyeBrowTilts[expression.eyeBrows] ?? 0.0
     }
 }
 
